@@ -1,12 +1,11 @@
 #include "rcc.h"
-
-
 /*
-
-multiplier = 168000000 / 4000000;
- mills = multiplier * mills * 1000 - 10;
- mills = 42 * 1000 * 1000 - 10
-
+  HSE -> PLL -> SYSCLK
+  external ceramic oscillator 8mhz
+  SYSCLK = 168mhz. 
+  AHB = 168mhz
+  APB1 = 42mhz
+  APB2 = 84mhz
 */
 
 void rcc_init() {
