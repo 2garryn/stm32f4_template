@@ -38,10 +38,9 @@ int main(void) {
 
 void TIM6_DAC_IRQHandler(void)
 {
-    TIM6->SR &= ~TIM_SR_UIF; //Сбрасываем флаг прерывания
+    TIM6->SR &= ~TIM_SR_UIF; 
     if(led) {
         GPIOD->ODR &= ~GPIO_ODR_ODR_13;
-        usart_write();
         led = 0;
     } else {
         GPIOD->ODR |= GPIO_ODR_ODR_13;

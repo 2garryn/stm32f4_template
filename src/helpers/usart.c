@@ -2,7 +2,6 @@
 
 /*
 RM0090 Rev 18 is used for references
-
 */
 
 /*
@@ -44,13 +43,15 @@ void usart_init() {
     USART1->CR1 |= (USART_CR1_UE | USART_CR1_TE);
 }
 
-void usart_write() {
-    USART1->DR = 10;
-    while( !(USART1->SR & 0x00000040) ); 
-    USART1->DR = 97;
-    while( !(USART1->SR & 0x00000040) ); 
-    USART1->DR = 98;
-    while( !(USART1->SR & 0x00000040) ); 
-    USART1->DR = 99;
-    while( !(USART1->SR & 0x00000040) ); 
+void usart_write(volatile char *s) {
+    while(*s){
+		usart_putc(*s);
+		s++;
+	}
+    usart_putc('\n');
+}
+
+void usart_putc(unsigned char c) {
+    USART1->DR = c;
+    while( !(USART1->SR & USART_SR_TXE) ); 
 }
