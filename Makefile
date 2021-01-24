@@ -14,6 +14,7 @@ C_SOURCES =  \
 src/main.c \
 src/helpers/rcc.c \
 src/helpers/usart.c \
+src/helpers/adc.c \
 lib/stm32f4xx/src/system_stm32f4xx.c  
 
 # ASM sources

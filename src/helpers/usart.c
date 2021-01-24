@@ -43,6 +43,16 @@ void usart_init() {
     USART1->CR1 |= (USART_CR1_UE | USART_CR1_TE);
 }
 
+void usart_write_uint32(uint32_t v) {
+    if(v == 0) { usart_write("0"); return; }
+    char s[11];
+    int i = sizeof(s);
+    s[--i] = '\0';
+    for(; v; v /= 10)
+            s[--i] = v % 10 + '0';
+    usart_write(s+i);
+}
+
 void usart_write(volatile char *s) {
     while(*s){
 		usart_putc(*s);
