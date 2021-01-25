@@ -12,6 +12,7 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 src/main.c \
+src/convf.c \
 src/helpers/rcc.c \
 src/helpers/usart.c \
 src/helpers/adc.c \
