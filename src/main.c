@@ -8,14 +8,9 @@ void delay1(volatile uint32_t delay) {
 int led1 = 1;
 int print = 0;
 
-void conv_callback1(uint32_t val) {
-    if(led1) {
-        GPIOD->ODR &= ~GPIO_ODR_ODR_12;
-        led1 = 0;
-    } else {
-        GPIOD->ODR |= GPIO_ODR_ODR_12;
-        led1 = 1;
-    }
+
+void printout(uint32_t val) {
+    usart_write_uint32(val);
 }
 
 
@@ -33,6 +28,8 @@ int main(void) {
     GPIOD->OTYPER &= ~GPIO_OTYPER_OT12;
 
     GPIOD->OSPEEDR |= (GPIO_OSPEEDR_OSPEED12_0 | GPIO_OSPEEDR_OSPEED12_1);
+
+    conf_set_callback(printout);
 
     adc_init(convf_callback);
 
@@ -65,6 +62,7 @@ int main(void) {
             print = 0;
         }
         */
+       convf_loop();
     }
 
     return 0;

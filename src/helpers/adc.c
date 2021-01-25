@@ -26,7 +26,7 @@ void adc_init(void (*clb)(uint32_t)) {
     ADC1->CR2 &= ~ADC_CR2_CONT; // Disable continous
     ADC1->CR1 &= ~ADC_CR1_SCAN; // Disable scan
 
-    ADC1->CR1 &= ~(ADC_CR1_RES_0 | ADC_CR1_RES_1); // 12-bit resolution
+    ADC1->CR1 |= ADC_CR1_RES_1; // 12-bit resolution
     ADC1->CR2 &= ~ADC_CR2_ALIGN;
 
     // TIM2_TRGO event
@@ -43,9 +43,9 @@ void adc_init(void (*clb)(uint32_t)) {
 
 
 
-    // 32.5khz
+    // 50khz
     TIM2->PSC = 42 - 1; 
-    TIM2->ARR = 30; 
+    TIM2->ARR = 20; 
     // The update event is selected as trigger output (TRGO).
     TIM2->CR2 &= ~(TIM_CR2_MMS_0 | TIM_CR2_MMS_2);
     TIM2->CR2 |= TIM_CR2_MMS_1;
