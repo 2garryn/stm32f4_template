@@ -11,12 +11,13 @@ BUILD_DIR = build
 
 # C sources
 C_SOURCES =  \
-src/main.c \
 src/convf.c \
+src/helpers/freq_debug.c \
 src/helpers/rcc.c \
 src/helpers/usart.c \
 src/helpers/adc.c \
-lib/stm32f4xx/src/system_stm32f4xx.c  
+lib/stm32f4xx/src/system_stm32f4xx.c \
+src/main.c 
 
 # ASM sources
 ASM_SOURCES =  \

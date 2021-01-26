@@ -15,35 +15,18 @@ uint32_t run_flag = 0;
 
 uint32_t tail_buffer = 0;
 
-uint32_t n = 0;
 
-int led2 = 0;
 void (*maxValueCallback)(uint32_t);
 
-void conf_set_callback(void (*clb)(uint32_t)) {
+void convf_set_callback(void (*clb)(uint32_t)) {
     maxValueCallback = clb;
 }
 
 void convf_loop() {
     if(!run_flag) return;
-    LOG("Pulse");
-    n++;
-    usart_write_uint32(n);
-    usart_write_uint32(max_value);
     maxValueCallback(max_value);
     max_value = 0;
     run_flag = 0;
-}
-
-
-void test() {
-    if(led2) {
-        GPIOD->ODR &= ~GPIO_ODR_ODR_12;
-        led2 = 0;
-    } else {
-        GPIOD->ODR |= GPIO_ODR_ODR_12;
-        led2 = 1;
-    }
 }
 
 

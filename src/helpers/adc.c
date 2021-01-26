@@ -44,8 +44,8 @@ void adc_init(void (*clb)(uint32_t)) {
 
 
     // 50khz
-    TIM2->PSC = 42 - 1; 
-    TIM2->ARR = 20; 
+    TIM2->PSC = 84 - 1; 
+    TIM2->ARR = 20 - 1; 
     // The update event is selected as trigger output (TRGO).
     TIM2->CR2 &= ~(TIM_CR2_MMS_0 | TIM_CR2_MMS_2);
     TIM2->CR2 |= TIM_CR2_MMS_1;
