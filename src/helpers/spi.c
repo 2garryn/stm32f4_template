@@ -63,6 +63,7 @@ void spi_init() {
 
     //8-bit
     SPI1->CR1 &= ~(SPI_CR1_DFF);
+    // MSB-first
     SPI1->CR1 &= ~(SPI_CR1_LSBFIRST);
 
     // enable
@@ -70,9 +71,15 @@ void spi_init() {
 
 }
 
-void spi_send_data(uint16_t data) {
+void spi_select() {
     GPIOA->ODR &= ~GPIO_ODR_ODR_4;
+}
+
+void spi_deselect() {
+    GPIOA->ODR |= GPIO_ODR_ODR_4;
+}
+
+void spi_send_data(uint16_t data) {
     SPI1->DR = data;
     while(!(SPI1->SR & SPI_SR_TXE)){};
-    GPIOA->ODR |= GPIO_ODR_ODR_4;
 }

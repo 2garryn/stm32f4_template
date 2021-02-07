@@ -12,6 +12,7 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 src/convf.c \
+src/i2s_player.c \
 src/helpers/freq_debug.c \
 src/helpers/rcc.c \
 src/helpers/spi.c \
