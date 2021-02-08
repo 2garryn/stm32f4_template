@@ -22,9 +22,9 @@ I2S bitrate = number of bits per channel × number of channels × sampling audio
 
 void i2s_player_init() {
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-    if(!(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN)) {
-        RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
-    }
+  //  if(!(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN)) {
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+   // }
     /*
         RCC->CR  
             PLLI2SON: PLLI2S enable
@@ -46,6 +46,7 @@ void i2s_player_init() {
     RCC->PLLI2SCFGR |= (RCC_PLLI2SCFGR_PLLI2SR_1);
 
     // PLLI2SN = 302 = 0b100101110
+    RCC->PLLI2SCFGR &= ~RCC_PLLI2SCFGR_PLLI2SN;
     RCC->PLLI2SCFGR |= (
         RCC_PLLI2SCFGR_PLLI2SN_1 | 
         RCC_PLLI2SCFGR_PLLI2SN_2 | 
@@ -78,6 +79,15 @@ void i2s_player_init() {
         GPIO_AFRH_AFSEL13_0 | GPIO_AFRH_AFSEL13_2 | 
         GPIO_AFRH_AFSEL15_0 | GPIO_AFRH_AFSEL15_2);
 
+        // I2SDIV = 53
+    SPI2->I2SPR &= (uint8_t) 0;
+
+    SPI2->I2SPR |= (uint8_t) 53;
+    // I2SODD set
+    SPI2->I2SPR |= SPI_I2SPR_ODD;
+
+    SPI2->I2SPR &= ~SPI_I2SPR_MCKOE;
+
     SPI2->I2SCFGR |= (
         // i2s selected
         SPI_I2SCFGR_I2SMOD |
@@ -87,24 +97,26 @@ void i2s_player_init() {
         SPI_I2SCFGR_I2SSTD_0
     );
     // Data length to be transferred - 16bit
-    SPI2->I2SCFGR &= ~(SPI_I2SCFGR_DATLEN_0 | SPI_I2SCFGR_DATLEN_1);
+    SPI2->I2SCFGR &= ~SPI_I2SCFGR_DATLEN;
     // Channel length (number of bits per audio channel) - 16bit
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_CHLEN;
-
-    // I2SDIV = 53
-    SPI2->I2SPR |= (uint32_t) 53;
-    // I2SODD set
-    SPI2->I2SPR != SPI_I2SPR_ODD;
-
-
-    // ENABLED!111
-    SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE;
-
 }
 
-void dma_init() {
-
+void i2s_send(uint16_t data) {
+    while((SPI2->SR & SPI_SR_TXE) == 0) {};
+    SPI2->DR = data;
 }
+
+
+void i2s_player_enable() {
+       // ENABLED!111
+    SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE; 
+}
+
+void i2s_player_disable() {
+    SPI2->I2SCFGR &= ~SPI_I2SCFGR_I2SE;
+}
+
 
 void i2s_player_play(int level) {
 
