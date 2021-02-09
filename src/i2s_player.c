@@ -20,28 +20,20 @@ I2S bitrate = number of bits per channel × number of channels × sampling audio
 
 */
 
+uint16_t data_arr[16] = {
+    0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0};
+
+
 void i2s_player_init() {
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-  //  if(!(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN)) {
+
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
-   // }
+
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+
     /*
-        RCC->CR  
-            PLLI2SON: PLLI2S enable
-            PLLI2SRDY: PLLI2S clock ready flag
-
-        RCC->CFGR
-            I2SSRC: I2S clock selection
-
-        RCC->PLLI2SCFGR
-            PLLI2SR: PLLI2S division factor for I2S clocks = 2
-            PLLI2SN: PLLI2S multiplication factor for VCO = 302
-
-        I2SDIV = 53
-        I2SODD = 1
-
+        CLOCKING
     */
-
     // PLLI2SR = 2 = 0b010
     RCC->PLLI2SCFGR |= (RCC_PLLI2SCFGR_PLLI2SR_1);
 
@@ -61,14 +53,14 @@ void i2s_player_init() {
 
     RCC->CFGR &= ~RCC_CFGR_I2SSRC;
 
+    /*
+        GPIO
+    */
     GPIOB->MODER |= (GPIO_MODER_MODER12_1 | GPIO_MODER_MODER13_1 | GPIO_MODER_MODER15_1);
     //Pull down
     GPIOB->PUPDR |= (GPIO_PUPDR_PUPDR12_1 | GPIO_PUPDR_PUPDR13_1 | GPIO_PUPDR_PUPDR15_1) ;
-
     // High speed
 	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR12_1 | GPIO_OSPEEDER_OSPEEDR13_1 | GPIO_OSPEEDER_OSPEEDR15_1);
-
-
     // Alternate function AF5 (8.4.10 p286, Datasheet table 9, p63)
     GPIOB->AFR[1] &= ~(
         GPIO_AFRH_AFSEL12 | 
@@ -79,10 +71,13 @@ void i2s_player_init() {
         GPIO_AFRH_AFSEL13_0 | GPIO_AFRH_AFSEL13_2 | 
         GPIO_AFRH_AFSEL15_0 | GPIO_AFRH_AFSEL15_2);
 
-        // I2SDIV = 53
+    /*
+        I2S
+    */
+    // I2SDIV = 53
     SPI2->I2SPR &= (uint8_t) 0;
-
     SPI2->I2SPR |= (uint8_t) 53;
+
     // I2SODD set
     SPI2->I2SPR |= SPI_I2SPR_ODD;
 
@@ -100,6 +95,32 @@ void i2s_player_init() {
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_DATLEN;
     // Channel length (number of bits per audio channel) - 16bit
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_CHLEN;
+    SPI2->CR2 |= SPI_CR2_TXDMAEN;
+
+    /*
+        DMA
+    */
+    //Stream 4, Channel 0
+    DMA1_Stream4->CR &= ~(DMA_SxCR_CHSEL);
+    DMA1_Stream4->CR |= (
+        // half-word (16-bit)
+        DMA_SxCR_MSIZE_0 | 
+        // half-word (16-bit)
+        DMA_SxCR_PSIZE_0 | 
+        // Circular mode
+        DMA_SxCR_CIRC |
+        // Memory incremental mode
+        DMA_SxCR_MINC |
+        // Memory to peripheral
+        DMA_SxCR_DIR_0
+        );
+
+    // Data items (size of array)
+    DMA1_Stream4->NDTR = (uint16_t) 16;
+    // Periphery address
+    DMA1_Stream4->PAR = (uint32_t) &(SPI2->DR);
+    // Memory address
+    DMA1_Stream4->M0AR = (uint32_t) &data_arr[0];
 }
 
 void i2s_send(uint16_t data) {
@@ -109,7 +130,8 @@ void i2s_send(uint16_t data) {
 
 
 void i2s_player_enable() {
-       // ENABLED!111
+    // ENABLE
+    DMA1_Stream4->CR |= DMA_SxCR_EN;
     SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE; 
 }
 
