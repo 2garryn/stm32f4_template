@@ -14,7 +14,7 @@ int main(void) {
     rcc_init();
 //    usart_init();
     freq_debug_init();
-    freq_debug_delay_init();
+//    freq_debug_delay_init();
 //    spi_init();
 
 //    freq_debug_tim6_init(10000, printout);
@@ -26,8 +26,8 @@ int main(void) {
     i2s_player_enable();
     while(1) {
         
-        freq_debug_delay(10, 0);
-        freq_debug_switch();
+       // freq_debug_delay(10, 0);
+        //freq_debug_switch();
         //i2s_send(0b1110110111101101);
         //spi_send_data(54);
         

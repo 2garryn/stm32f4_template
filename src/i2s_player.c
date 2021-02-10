@@ -1,5 +1,6 @@
 #include "i2s_player.h"
-
+#include "freq_debug.h"
+#include <string.h>
 /*
 PCM5102A
 16-bit audio data,
@@ -20,8 +21,46 @@ I2S bitrate = number of bits per channel × number of channels × sampling audio
 
 */
 
-uint16_t data_arr[16] = {
-    0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0};
+/*
+uint16_t data_arr0[16] = {
+    0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0   //, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0, 0xFFFF, 0
+};
+
+uint16_t data_arr1[16] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF //, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0
+};
+*/
+
+
+#define BUFFER_SIZE 256
+
+
+uint16_t data_arr0[BUFFER_SIZE];
+uint16_t data_arr1[BUFFER_SIZE];
+
+
+uint32_t play_length; 
+uint8_t stop_play;
+
+
+uint16_t* sample;
+uint32_t sample_position;
+
+
+
+void copy_data(uint16_t* dest) {
+    for(int i = 0; i < BUFFER_SIZE; i++) {
+        if(play_length) {
+            dest[i] = sample[sample_position];
+            sample_position++;
+            play_length--;
+        } else {
+            dest[i] = 0;
+        }
+    }
+
+}
+
 
 
 void i2s_player_init() {
@@ -107,26 +146,66 @@ void i2s_player_init() {
         DMA_SxCR_MSIZE_0 | 
         // half-word (16-bit)
         DMA_SxCR_PSIZE_0 | 
-        // Circular mode
+        // Circular mode (automatically enabled on double buffered mode. Left as reminer)
         DMA_SxCR_CIRC |
         // Memory incremental mode
         DMA_SxCR_MINC |
         // Memory to peripheral
-        DMA_SxCR_DIR_0
-        );
+        DMA_SxCR_DIR_0 |
+        // Double buffered mode
+        DMA_SxCR_DBM | 
+        // Transfer complete interrupt enable
+        DMA_SxCR_TCIE 
+        // Half transfer interrupt enable
+    //  DMA_SxCR_HTIE 
+    );
 
     // Data items (size of array)
-    DMA1_Stream4->NDTR = (uint16_t) 16;
+    DMA1_Stream4->NDTR = (uint16_t) BUFFER_SIZE;
     // Periphery address
     DMA1_Stream4->PAR = (uint32_t) &(SPI2->DR);
-    // Memory address
-    DMA1_Stream4->M0AR = (uint32_t) &data_arr[0];
+    // Memory address (first buffer)
+    DMA1_Stream4->M0AR = (uint32_t) &data_arr0[0];
+    // Memory address (second buffer)
+    DMA1_Stream4->M1AR = (uint32_t) &data_arr1[0];
+
+    NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 }
 
+void DMA1_Stream4_IRQHandler() {
+
+    //Stream4 transfer complete
+    if((DMA1->HISR & DMA_HISR_TCIF4) != 0) {
+        // Stream4 clear transfer complete interrupt flag
+        DMA1->HIFCR |= DMA_HIFCR_CTCIF4;
+        //freq_debug_switch();
+        
+        if((DMA1_Stream4->CR & DMA_SxCR_CT) == 0) {
+            copy_data(data_arr1);
+            //M1AR can be updated
+        } else {
+            copy_data(data_arr0);
+            //M0AR can be updated
+        }
+        
+        return;
+    }
+/*
+    //Stream4 half tranfer 
+    if((DMA1->HISR & DMA_HISR_HTIF4) != 0) {
+        // Stream4 clear half transfer interrupt flag
+        DMA1->HIFCR |= DMA_HIFCR_CHTIF4;
+        return;
+    }
+    */
+}
+
+/*
 void i2s_send(uint16_t data) {
     while((SPI2->SR & SPI_SR_TXE) == 0) {};
     SPI2->DR = data;
 }
+*/
 
 
 void i2s_player_enable() {
@@ -137,9 +216,16 @@ void i2s_player_enable() {
 
 void i2s_player_disable() {
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_I2SE;
+    DMA1_Stream4->CR &= ~DMA_SxCR_EN;
 }
 
 
-void i2s_player_play(int level) {
 
+void i2s_player_play(uint32_t length, uint16_t* offset) {
+    i2s_player_disable();
+    play_length = length;
+    sample = offset;
+    sample_position = 0;
+    copy_data(data_arr0);
+    i2s_player_enable();
 }
