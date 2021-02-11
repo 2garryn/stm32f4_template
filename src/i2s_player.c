@@ -1,6 +1,7 @@
 #include "i2s_player.h"
 #include "freq_debug.h"
 #include <string.h>
+
 /*
 PCM5102A
 16-bit audio data,
@@ -32,33 +33,27 @@ uint16_t data_arr1[16] = {
 */
 
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 1024
 
 
 uint16_t data_arr0[BUFFER_SIZE];
-uint16_t data_arr1[BUFFER_SIZE];
 
 
-uint32_t play_length; 
-uint8_t stop_play;
+volatile uint32_t play_length; 
+
+volatile uint16_t* sample;
 
 
-uint16_t* sample;
-uint32_t sample_position;
-
-
-
-void copy_data(uint16_t* dest) {
-    for(int i = 0; i < BUFFER_SIZE; i++) {
+void copy_data(uint16_t* dest, int start, int stop) {
+    for(int i = start; i < stop; i++) {
         if(play_length) {
-            dest[i] = sample[sample_position];
-            sample_position++;
+            dest[i] = *sample;
+            sample++;
             play_length--;
         } else {
             dest[i] = 0;
         }
     }
-
 }
 
 
@@ -122,13 +117,15 @@ void i2s_player_init() {
 
     SPI2->I2SPR &= ~SPI_I2SPR_MCKOE;
 
+    SPI2->I2SCFGR &= ~(SPI_I2SCFGR_I2SSTD_0 | SPI_I2SCFGR_I2SSTD_1);
+
     SPI2->I2SCFGR |= (
         // i2s selected
         SPI_I2SCFGR_I2SMOD |
         // 10: Master - transmit 
-        SPI_I2SCFGR_I2SCFG_1 | 
+        SPI_I2SCFGR_I2SCFG_1 //| 
         // 01: MSB justified standard (left justified)
-        SPI_I2SCFGR_I2SSTD_0
+        //SPI_I2SCFGR_I2SSTD_0
     );
     // Data length to be transferred - 16bit
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_DATLEN;
@@ -136,9 +133,6 @@ void i2s_player_init() {
     SPI2->I2SCFGR &= ~SPI_I2SCFGR_CHLEN;
     SPI2->CR2 |= SPI_CR2_TXDMAEN;
 
-    /*
-        DMA
-    */
     //Stream 4, Channel 0
     DMA1_Stream4->CR &= ~(DMA_SxCR_CHSEL);
     DMA1_Stream4->CR |= (
@@ -153,11 +147,11 @@ void i2s_player_init() {
         // Memory to peripheral
         DMA_SxCR_DIR_0 |
         // Double buffered mode
-        DMA_SxCR_DBM | 
+        //DMA_SxCR_DBM | 
         // Transfer complete interrupt enable
-        DMA_SxCR_TCIE 
+        DMA_SxCR_TCIE |
         // Half transfer interrupt enable
-    //  DMA_SxCR_HTIE 
+        DMA_SxCR_HTIE 
     );
 
     // Data items (size of array)
@@ -167,7 +161,7 @@ void i2s_player_init() {
     // Memory address (first buffer)
     DMA1_Stream4->M0AR = (uint32_t) &data_arr0[0];
     // Memory address (second buffer)
-    DMA1_Stream4->M1AR = (uint32_t) &data_arr1[0];
+    //DMA1_Stream4->M1AR = (uint32_t) &data_arr1[0];
 
     NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 }
@@ -179,33 +173,25 @@ void DMA1_Stream4_IRQHandler() {
         // Stream4 clear transfer complete interrupt flag
         DMA1->HIFCR |= DMA_HIFCR_CTCIF4;
         //freq_debug_switch();
-        
-        if((DMA1_Stream4->CR & DMA_SxCR_CT) == 0) {
-            copy_data(data_arr1);
-            //M1AR can be updated
-        } else {
-            copy_data(data_arr0);
-            //M0AR can be updated
-        }
-        
+        copy_data(data_arr0, 512, 1024);
         return;
     }
-/*
+
     //Stream4 half tranfer 
     if((DMA1->HISR & DMA_HISR_HTIF4) != 0) {
         // Stream4 clear half transfer interrupt flag
         DMA1->HIFCR |= DMA_HIFCR_CHTIF4;
+        copy_data(data_arr0, 0, 512);
         return;
     }
-    */
 }
 
-/*
+
 void i2s_send(uint16_t data) {
-    while((SPI2->SR & SPI_SR_TXE) == 0) {};
-    SPI2->DR = data;
+    SPI2->DR =  data;
+    while (!(SPI2->SR & SPI_SR_TXE));
 }
-*/
+
 
 
 void i2s_player_enable() {
@@ -219,13 +205,35 @@ void i2s_player_disable() {
     DMA1_Stream4->CR &= ~DMA_SxCR_EN;
 }
 
+uint16_t sine[64] = {32768,35979,39160,42279,45307,48214,50972,53555,55938,58097,60013,61666,63041,64124,64905,65377,
+    65535,65377,64905,64124,63041,61666,60013,58097,55938,53555,50972,48214,45307,42279,39160,35979,
+    32768,29556,26375,23256,20228,17321,14563,11980,9597,7438,5522,3869,2494,1411,630,158,
+    0,158,630,1411,2494,3869,5522,7438,9597,11980,14563,17321,20228,23256,26375,29556};
+
+volatile uint16_t sine2[29] = {29556,26375,23256,20228,17321,14563,11980,9597,7438,5522,3869,2494,1411,630,158,630,1411,2494,3869,5522,7438,9597,11980,14563,17321,20228,23256,26375,29556};
+
+volatile uint16_t sine3[29] = {158,630,1411,2494,3869,5522,7438,9597,11980,14563,17321,20228,23256,26375,29556,26375,23256,20228,17321,14563,11980,9597,7438,5522,3869,2494,1411,630,158};
+void i2s_play_array() {
+    while(1) {
+        for(volatile int i = 0; i < 29; i++) {
+            i2s_send(sine3[i]);
+            i2s_send(sine3[i]);
+        }
+    }
+}
+
+void i2s_player_play2(uint32_t length, volatile uint16_t* offset) {
+    for(volatile int i = 0; i < length; i++) {
+        i2s_send(*offset);
+        offset++;
+    }
+}
 
 
 void i2s_player_play(uint32_t length, uint16_t* offset) {
     i2s_player_disable();
     play_length = length;
     sample = offset;
-    sample_position = 0;
-    copy_data(data_arr0);
+    copy_data(data_arr0, 0, 1024);
     i2s_player_enable();
 }

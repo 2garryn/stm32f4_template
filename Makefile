@@ -15,6 +15,7 @@ src/convf.c \
 src/i2s_player.c \
 src/helpers/freq_debug.c \
 src/helpers/rcc.c \
+src/helpers/sample_storage.c \
 src/helpers/spi.c \
 src/helpers/usart.c \
 src/helpers/adc.c \

@@ -3,6 +3,7 @@
 #include "freq_debug.h"
 #include "spi.h"
 #include "i2s_player.h"
+#include "sample_storage.h"
 
 void printout(uint32_t value) {
     LOG("Print");
@@ -14,7 +15,7 @@ int main(void) {
     rcc_init();
 //    usart_init();
     freq_debug_init();
-//    freq_debug_delay_init();
+    freq_debug_delay_init();
 //    spi_init();
 
 //    freq_debug_tim6_init(10000, printout);
@@ -23,11 +24,15 @@ int main(void) {
 
 //    adc_init(convf_callback);
     i2s_player_init();
-    i2s_player_enable();
+    sample_storage_init();
+
+    FileData sample = sample_storage_get();
+  //  i2s_play_array();
     while(1) {
         
-       // freq_debug_delay(10, 0);
-        //freq_debug_switch();
+        i2s_player_play(sample.file_size, sample.start_pointer);
+        freq_debug_delay(500, 0);
+        freq_debug_switch();
         //i2s_send(0b1110110111101101);
         //spi_send_data(54);
         
