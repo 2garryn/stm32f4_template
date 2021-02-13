@@ -35,19 +35,29 @@ uint16_t data_arr1[16] = {
 
 #define BUFFER_SIZE 1024
 
-
 uint16_t data_arr0[BUFFER_SIZE];
-
 
 volatile uint32_t play_length; 
 
 volatile uint16_t* sample;
 
+volatile uint32_t velocity_level;
+
 
 void copy_data(uint16_t* dest, int start, int stop) {
+    volatile int16_t* signed_value;
+    volatile float leveled;
+    volatile int16_t rounded;
     for(int i = start; i < stop; i++) {
         if(play_length) {
-            dest[i] = *sample;
+            if(velocity_level > 126) {
+                dest[i] = *sample;
+            } else {
+                signed_value = (int16_t*) sample;
+                leveled = ((float) velocity_level / 127) * (*signed_value);
+                rounded = (int16_t) leveled;
+                dest[i] = *((uint16_t*) &rounded);
+            }
             sample++;
             play_length--;
         } else {
@@ -230,8 +240,9 @@ void i2s_player_play2(uint32_t length, volatile uint16_t* offset) {
 }
 
 
-void i2s_player_play(uint32_t length, uint16_t* offset) {
+void i2s_player_play(uint32_t length, uint16_t* offset, uint32_t level) {
     i2s_player_disable();
+    velocity_level = level;
     play_length = length;
     sample = offset;
     copy_data(data_arr0, 0, 1024);

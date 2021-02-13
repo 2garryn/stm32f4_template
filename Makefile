@@ -13,6 +13,7 @@ BUILD_DIR = build
 C_SOURCES =  \
 src/convf.c \
 src/i2s_player.c \
+src/drum.c \
 src/helpers/freq_debug.c \
 src/helpers/rcc.c \
 src/helpers/sample_storage.c \

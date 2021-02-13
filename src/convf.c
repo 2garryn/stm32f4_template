@@ -2,11 +2,11 @@
 #include "helpers.h"
 
 
-#define BUFFER_LENGTH 100
+#define BUFFER_LENGTH 50
 #define MAX_VALUE 255
 #define ZERO_VALUE 128
-#define START_VALUE 132
-#define TAIL_LEGNTH 100
+#define START_VALUE 130
+#define TAIL_LEGNTH 75
 
 uint32_t buffer_position = 0;
 uint32_t max_value = ZERO_VALUE;
@@ -24,10 +24,13 @@ void convf_set_callback(void (*clb)(uint32_t)) {
 
 void convf_loop() {
     if(!run_flag) return;
-    maxValueCallback(max_value);
+
+    maxValueCallback(max_value - 127);
     max_value = 0;
     run_flag = 0;
 }
+
+
 
 
 void convf_callback(uint32_t value) {
