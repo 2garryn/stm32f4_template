@@ -25,7 +25,7 @@ src/main.c
 
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f407xx.s
+startup_stm32f429xx.s
 
 # Compiler path
 PREFIX = arm-none-eabi-
@@ -70,7 +70,7 @@ AS_DEFS =
 # -DSTM32F407xx
 
 C_DEFS =  \
--DSTM32F407xx
+-DSTM32F429xx
 
 
 # AS includes
@@ -101,7 +101,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = stm32f407vgt_cube.ld
+LDSCRIPT = stm32f429zitx_flash.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 

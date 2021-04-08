@@ -1,5 +1,5 @@
 #include "adc.h"
-#include "stm32f407xx.h"
+#include "stm32f4xx.h"
 
 void (*adcEndCallback)(uint32_t);
 
